@@ -10,7 +10,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Transitioning, Transition } from 'react-native-reanimated';
+import Animated, {
+  Transitioning,
+  Transition,
+  Clock,
+  Easing,
+  block,
+  cond,
+  clockRunning,
+  timing,
+  eq,
+  stopClock,
+  set,
+} from 'react-native-reanimated';
 
 import Card from './src/components/Card';
 
@@ -28,12 +40,6 @@ export default function App() {
       </View>
     ))
   );
-
-  const [cardLayout, setCardLayout] = useState<LayoutRectangle[]>([]);
-
-  useEffect(() => {
-    if (cardLayout.length === items.length) console.log(cardLayout);
-  }, [cardLayout]);
 
   const transition = (
     <Transition.Together>
