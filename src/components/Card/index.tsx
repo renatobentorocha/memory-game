@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { ORIGIN_DIMENSIONS } from '../../dimensions';
 import Circle from '../svg/Circle';
@@ -20,6 +20,7 @@ import Animated, {
   Extrapolate,
   concat,
   not,
+  call,
 } from 'react-native-reanimated';
 
 import {
@@ -27,9 +28,11 @@ import {
   TapGestureHandler,
   TapGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
+import { CardProps, ContextType, GameContext } from '../../GameContext';
 
-type Props = {
-  text: string;
+type Props = CardProps & {
+  onPress: (id: string) => void;
+  hasPair: (id: string) => boolean;
 };
 
 const CARD_WIDTH = ORIGIN_DIMENSIONS.width / 3 - 2;
@@ -39,7 +42,8 @@ const withTiming = (
   clock: Clock,
   position: Animated.Value<number>,
   toValue: Animated.Value<number>,
-  invert: Animated.Value<number>
+  invert: Animated.Value<number>,
+  onPress: () => void
 ) => {
   const state: Animated.TimingState = {
     finished: new Animated.Value(0),
@@ -63,18 +67,77 @@ const withTiming = (
       set(state.frameTime, 0),
       set(state.time, 0),
       set(invert, not(invert)),
+      call<number>([], onPress),
     ]),
 
     state.position,
   ]);
 };
 
-const Card: React.FC<Props> = ({ text }) => {
+const withTimingScale = (clock: Clock, callback: () => void) => {
+  const state: Animated.TimingState = {
+    finished: new Animated.Value(0),
+    position: new Animated.Value(1),
+    frameTime: new Animated.Value(0),
+    time: new Animated.Value(0),
+  };
+
+  const config: Animated.TimingConfig = {
+    toValue: new Animated.Value(0),
+    duration: 500,
+    easing: Easing.inOut(Easing.ease),
+  };
+
+  return block([
+    cond(clockRunning(clock), timing(clock, state, config)),
+
+    cond(eq(state.finished, 1), [
+      stopClock(clock),
+      set(state.finished, 0),
+      set(state.frameTime, 0),
+      set(state.time, 0),
+      call([], callback)
+    ]),
+
+    state.position,
+  ]);
+};
+
+const Card: React.FC<Props> = (props) => {
+  const {id,  text, isSelected, isMatched } = props;
+  const { selectedCards, handleSelectCard, removeFromList, setIsSelected, setIsMatched } = useContext<ContextType>(
+    GameContext
+  );
+
+  // const [isMatched, setIsMatched] = useState<number>(0);
+  // const [isSelected, setIsSelected] = useState<number>(0);
+
   const clock = useRef(new Animated.Clock()).current;
+  const clockScaleCard = useRef(new Animated.Clock()).current;
   const invert = useRef(new Animated.Value<number>(0)).current;
   const from = useRef(new Animated.Value<number>(0)).current;
   const toValue = useRef(new Animated.Value<number>(1)).current;
   const progress = useRef(new Animated.Value<number>(0)).current;
+  const scaleCard = useRef(new Animated.Value<number>(1)).current;
+
+  useEffect(() => {
+    // setIsSelected((v) => (v ? 0 : 1));
+  }, [selectedCards]);
+
+  useEffect(() => {
+    
+    if (isSelected) {
+      const match = selectedCards.findIndex((v) => v === text) >= 0;
+
+      handleSelectCard(text);
+      if ( match ) {
+        
+        // setIsMatched(isSelected && match ? 1 : 0);
+        setIsMatched();
+      }
+    };
+
+  }, [isSelected]);
 
   const rotateY = interpolate(progress, {
     inputRange: [0, 1],
@@ -109,6 +172,16 @@ const Card: React.FC<Props> = ({ text }) => {
   const tapState = useRef(new Animated.Value<State>(State.UNDETERMINED))
     .current;
 
+  const internalOnPress = () => {
+    // setIsSelected((v) => (v ? 0 : 1));
+    setIsSelected();
+    // handleSelectCard(text);
+  };
+
+  const removeFromSelectedCardList = () => {
+    removeFromList(text);
+  };
+
   useCode(
     () =>
       block([
@@ -120,10 +193,25 @@ const Card: React.FC<Props> = ({ text }) => {
         ),
         cond(
           clockRunning(clock),
-          set(progress, withTiming(clock, from, toValue, invert))
+          set(
+            progress,
+            withTiming(clock, from, toValue, invert, internalOnPress)
+          )
         ),
       ]),
     []
+  );
+
+  useCode(
+    () =>
+      block([
+        cond(isMatched, startClock(clockScaleCard)),
+        cond(
+          clockRunning(clockScaleCard),
+          set(scaleCard, withTimingScale(clockScaleCard, removeFromSelectedCardList))
+        ),
+      ]),
+    [isMatched]
   );
 
   const onHandlerStateChange = event<TapGestureHandlerStateChangeEvent>([
@@ -134,37 +222,39 @@ const Card: React.FC<Props> = ({ text }) => {
 
   return (
     <TapGestureHandler onHandlerStateChange={onHandlerStateChange}>
-      <Animated.View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              opacity: opacityBack,
-              transform: [
-                { perspective: 1200 },
-                { rotateY: '180deg' },
-                { rotateY: concat(rotateY, 'deg') },
-                { scale: scaleBack },
-              ],
-            },
-          ]}
-        >
-          <Circle width={120} height={120} />
-          <Text style={styles.text}>{text}</Text>
+      <Animated.View style={{ transform: [{ scale: scaleCard }] }}>
+        <Animated.View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
+          <Animated.View
+            style={[
+              styles.container,
+              {
+                opacity: opacityBack,
+                transform: [
+                  { perspective: 1200 },
+                  { rotateY: '180deg' },
+                  { rotateY: concat(rotateY, 'deg') },
+                  { scale: scaleBack },
+                ],
+              },
+            ]}
+          >
+            <Circle width={120} height={120} />
+            <Text style={styles.text}>{text}</Text>
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.container,
+              {
+                opacity: opacityFront,
+                transform: [
+                  { perspective: 1200 },
+                  { rotateY: concat(rotateY, 'deg') },
+                  { scale: scaleFront },
+                ],
+              },
+            ]}
+          />
         </Animated.View>
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              opacity: opacityFront,
-              transform: [
-                { perspective: 1200 },
-                { rotateY: concat(rotateY, 'deg') },
-                { scale: scaleFront },
-              ],
-            },
-          ]}
-        />
       </Animated.View>
     </TapGestureHandler>
   );
