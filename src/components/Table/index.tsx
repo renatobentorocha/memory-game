@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Button } from 'react-native';
+import { StyleSheet, View, Button, TouchableOpacity, Text } from 'react-native';
 
 import { Transitioning, Transition } from 'react-native-reanimated';
 import { ContextType, GameContext } from '../../GameContext';
+import TableContexProvider from '../../TableContext';
 import Card from '../Card';
 
 export default function Table() {
@@ -24,26 +25,29 @@ export default function Table() {
   const ref = useRef();
 
   return (
-    <Transitioning.View
-      ref={ref}
-      transition={transition}
-      style={styles.container}
-    >
-      {data}
+    <TableContexProvider setData={setData}>
+      <Transitioning.View
+        ref={ref}
+        transition={transition}
+        style={styles.container}
+      >
+        {data}
 
-      <View style={{ position: 'absolute' }}>
-        <Button
-          title="shuffle"
-          color="#FF5252"
-          onPress={() => {
-            ref.current.animateNextTransition();
-            shuffle(setData);
-          }}
-        />
-      </View>
-
-      <StatusBar style="auto" hidden />
-    </Transitioning.View>
+        <View style={{ position: 'absolute', bottom: 0 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (ref.current) {
+                ref.current.animateNextTransition();
+                shuffle(setData);
+              }
+            }}
+          >
+            <Text>shuffle</Text>
+          </TouchableOpacity>
+        </View>
+        <StatusBar style="auto" hidden />
+      </Transitioning.View>
+    </TableContexProvider>
   );
 }
 
@@ -52,6 +56,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: '#fff',
+    backgroundColor: '#171717',
   },
 });

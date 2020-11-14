@@ -19,6 +19,7 @@
     "plugin:prettier/recommended"
   ],
   "rules": {
+    "react/prop-types": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "react/jsx-filename-extension": [
       1,

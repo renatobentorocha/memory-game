@@ -29,6 +29,7 @@ import {
   TapGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import { CardProps, ContextType, GameContext } from '../../GameContext';
+import { TableContext, TableContextProps } from '../../TableContext';
 
 type Props = CardProps & {
   onPress: (id: string) => void;
@@ -36,7 +37,7 @@ type Props = CardProps & {
 };
 
 const CARD_WIDTH = ORIGIN_DIMENSIONS.width / 3 - 2;
-const CARD_HEIGHT = ORIGIN_DIMENSIONS.height / 4;
+const CARD_HEIGHT = ORIGIN_DIMENSIONS.height / 5;
 
 const withTiming = (
   clock: Clock,
@@ -96,7 +97,7 @@ const withTimingScale = (clock: Clock, callback: () => void) => {
       set(state.finished, 0),
       set(state.frameTime, 0),
       set(state.time, 0),
-      call([], callback)
+      call([], callback),
     ]),
 
     state.position,
@@ -104,13 +105,21 @@ const withTimingScale = (clock: Clock, callback: () => void) => {
 };
 
 const Card: React.FC<Props> = (props) => {
-  const {id,  text, isSelected, isMatched } = props;
-  const { selectedCards, handleSelectCard, removeFromList, setIsSelected, setIsMatched } = useContext<ContextType>(
-    GameContext
-  );
+  const { id, text, isMatched, isSelected } = props;
+  const {
+    cardsProps,
+    selectedCards,
+    handleSelectCard,
+    removeFromList,
+    setIsSelected,
+    setIsMatched,
+    isSelected: teste,
+    hasPair,
+  } = useContext<ContextType>(GameContext);
 
-  // const [isMatched, setIsMatched] = useState<number>(0);
-  // const [isSelected, setIsSelected] = useState<number>(0);
+  const { setData } = useContext<TableContextProps>(TableContext);
+
+  const [internalIsMatched, setInternalIsMatched] = useState<number>(0);
 
   const clock = useRef(new Animated.Clock()).current;
   const clockScaleCard = useRef(new Animated.Clock()).current;
@@ -120,24 +129,18 @@ const Card: React.FC<Props> = (props) => {
   const progress = useRef(new Animated.Value<number>(0)).current;
   const scaleCard = useRef(new Animated.Value<number>(1)).current;
 
-  useEffect(() => {
-    // setIsSelected((v) => (v ? 0 : 1));
-  }, [selectedCards]);
+  const [selected, setSelected] = useState(false);
 
   useEffect(() => {
-    
-    if (isSelected) {
-      const match = selectedCards.findIndex((v) => v === text) >= 0;
+    setInternalIsMatched(isMatched ? 1 : 0);
+  }, [isMatched]);
 
-      handleSelectCard(text);
-      if ( match ) {
-        
-        // setIsMatched(isSelected && match ? 1 : 0);
-        setIsMatched();
-      }
-    };
-
-  }, [isSelected]);
+  useEffect(() => {
+    if (selected) {
+      setIsSelected(id, text, setData);
+      setSelected(false);
+    }
+  }, [selected]);
 
   const rotateY = interpolate(progress, {
     inputRange: [0, 1],
@@ -173,9 +176,7 @@ const Card: React.FC<Props> = (props) => {
     .current;
 
   const internalOnPress = () => {
-    // setIsSelected((v) => (v ? 0 : 1));
-    setIsSelected();
-    // handleSelectCard(text);
+    setSelected(true);
   };
 
   const removeFromSelectedCardList = () => {
@@ -205,13 +206,16 @@ const Card: React.FC<Props> = (props) => {
   useCode(
     () =>
       block([
-        cond(isMatched, startClock(clockScaleCard)),
+        cond(internalIsMatched, startClock(clockScaleCard)),
         cond(
           clockRunning(clockScaleCard),
-          set(scaleCard, withTimingScale(clockScaleCard, removeFromSelectedCardList))
+          set(
+            scaleCard,
+            withTimingScale(clockScaleCard, removeFromSelectedCardList)
+          )
         ),
       ]),
-    [isMatched]
+    [internalIsMatched]
   );
 
   const onHandlerStateChange = event<TapGestureHandlerStateChangeEvent>([
@@ -269,6 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'orange',
     paddingHorizontal: 5,
     position: 'absolute',
+    borderRadius: 10,
   },
   text: {
     fontSize: 48,
