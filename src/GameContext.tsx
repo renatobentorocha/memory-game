@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Card from './components/Card';
+import { emojisList } from './components/Emojis';
 
 export type CardProps = {
   id: number;
@@ -34,6 +35,7 @@ export type ContextType = {
     setData: React.Dispatch<React.SetStateAction<JSX.Element[]>>
   ) => undefined;
   isSelected: (id: number) => boolean;
+  refresh: () => undefined;
 };
 
 export const GameContext = React.createContext<ContextType>({
@@ -49,40 +51,80 @@ export const GameContext = React.createContext<ContextType>({
   setIsSelected: () => undefined,
   setIsMatched: () => undefined,
   isSelected: () => false,
+  refresh: () => undefined,
 });
 
-const GameContextComponent: React.FC = ({ children }) => {
-  const emojisList = '😀 😃 😄 😁 😆 😅'.split(' ');
+const emojis = emojisList();
 
+const cardsPropsList = () =>
+  emojis.concat(emojis).map((text, index) => ({
+    id: index,
+    isMatched: false,
+    isSelected: false,
+    text,
+  }));
+
+const GameContextComponent: React.FC = ({ children }) => {
+  const [refresh, setRefresh] = useState<number>();
   const [dataCallback, setDataCallback] = useState<
     React.Dispatch<React.SetStateAction<JSX.Element[]>>
   >();
 
-  const [cardsProps, setCardsProps] = useState<CardProps[]>(
-    emojisList.concat(emojisList).map((text, index) => ({
-      id: index,
-      isMatched: false,
-      isSelected: false,
-      text,
-    }))
-  );
+  const [cardsProps, setCardsProps] = useState<CardProps[]>();
+
+  const handleRefresh = () => {
+    setRefresh(1);
+    // setCardsProps([]);
+    // setCards([]);
+  };
+
+  // useEffect(() => card, []);
+
+  // useEffect(() => {
+  //   if (!cardsProps.length && !cards?.length) {
+  //     const props = cardsPropsList();
+
+  //     setCardsProps(props);
+  //     setCards(getCardComponentList(props));
+  //   }
+  // }, [cardsProps]);
 
   const [cards, setCards] = useState<JSX.Element[]>();
 
+  const getCardComponentList = (cardsProps: CardProps[]) =>
+    cardsProps.map((cardProps) => (
+      <View key={cardProps.id.toString()} style={{ padding: 1 }}>
+        <Card
+          id={cardProps.id}
+          text={cardProps.text}
+          isSelected={cardProps.isSelected}
+          isMatched={cardProps.isMatched}
+        />
+      </View>
+    ));
+
   useEffect(() => {
-    setCards(
-      cardsProps.map((cardProps) => (
-        <View key={cardProps.id.toString()} style={{ padding: 1 }}>
-          <Card
-            id={cardProps.id}
-            text={cardProps.text}
-            isSelected={cardProps.isSelected}
-            isMatched={cardProps.isMatched}
-          />
-        </View>
-      ))
-    );
+    const props = cardsPropsList();
+    setCardsProps(props);
+    setCards(getCardComponentList(props));
   }, []);
+
+  useEffect(() => {
+    if (refresh !== undefined) {
+      setSelectedCards([]);
+      setCardsProps(undefined);
+      setCards(undefined);
+    }
+  }, [refresh]);
+
+  useEffect(() => {
+    if (refresh !== undefined && !cardsProps && !cards?.length) {
+      const props = cardsPropsList();
+      setRefresh(undefined);
+      setCards(getCardComponentList(props));
+      setCardsProps(props);
+    }
+  }, [cardsProps]);
 
   const isSelected = (id: number) =>
     selectedCards.find((card) => card.id === id)?.isSelected;
@@ -219,6 +261,7 @@ const GameContextComponent: React.FC = ({ children }) => {
         setIsMatched,
         dataCallback: setDataCallback,
         isSelected,
+        refresh: handleRefresh,
       }}
     >
       {children}

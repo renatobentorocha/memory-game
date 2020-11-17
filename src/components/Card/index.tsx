@@ -36,8 +36,8 @@ type Props = CardProps & {
   hasPair: (id: string) => boolean;
 };
 
-const CARD_WIDTH = ORIGIN_DIMENSIONS.width / 3 - 2;
-const CARD_HEIGHT = ORIGIN_DIMENSIONS.height / 5;
+export const CARD_WIDTH = ORIGIN_DIMENSIONS.width / 3 - 2;
+export const CARD_HEIGHT = ORIGIN_DIMENSIONS.height / 5;
 
 const withTiming = (
   clock: Clock,
