@@ -31,11 +31,6 @@ import {
 import { CardProps, ContextType, GameContext } from '../../GameContext';
 import { TableContext, TableContextProps } from '../../TableContext';
 
-type Props = CardProps & {
-  onPress: (id: string) => void;
-  hasPair: (id: string) => boolean;
-};
-
 export const CARD_WIDTH = ORIGIN_DIMENSIONS.width / 3 - 2;
 export const CARD_HEIGHT = ORIGIN_DIMENSIONS.height / 5;
 
@@ -104,18 +99,11 @@ const withTimingScale = (clock: Clock, callback: () => void) => {
   ]);
 };
 
-const Card: React.FC<Props> = (props) => {
-  const { id, text, isMatched, isSelected } = props;
-  const {
-    cardsProps,
-    selectedCards,
-    handleSelectCard,
-    removeFromList,
-    setIsSelected,
-    setIsMatched,
-    isSelected: teste,
-    hasPair,
-  } = useContext<ContextType>(GameContext);
+const Card: React.FC<CardProps> = (props) => {
+  const { id, text, isMatched } = props;
+  const { removeFromList, setIsSelected } = useContext<ContextType>(
+    GameContext
+  );
 
   const { setData } = useContext<TableContextProps>(TableContext);
 

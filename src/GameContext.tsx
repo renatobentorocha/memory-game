@@ -11,46 +11,26 @@ export type CardProps = {
 };
 
 export type ContextType = {
-  handleSelectCard: (card: CardProps) => void;
-  hasPair: (id: number, text: string) => boolean;
   selectedCards: CardProps[];
   removeFromList: (text: string) => void;
-  cardsProps: CardProps[];
-  setCardsProps: () => undefined;
   shuffle: (
     callback: React.Dispatch<React.SetStateAction<JSX.Element[]>>
   ) => void;
-  dataCallback: React.Dispatch<
-    React.SetStateAction<
-      React.Dispatch<React.SetStateAction<JSX.Element[]>> | undefined
-    >
-  >;
   cards: JSX.Element[];
   setIsSelected: (
     id: number,
+    text: string,
     setData: React.Dispatch<React.SetStateAction<JSX.Element[]>>
-  ) => undefined;
-  setIsMatched: (
-    id: number,
-    setData: React.Dispatch<React.SetStateAction<JSX.Element[]>>
-  ) => undefined;
-  isSelected: (id: number) => boolean;
-  refresh: () => undefined;
+  ) => void;
+  refresh: () => void;
 };
 
 export const GameContext = React.createContext<ContextType>({
-  hasPair: () => false,
-  handleSelectCard: () => undefined,
   selectedCards: [],
   removeFromList: () => undefined,
-  cardsProps: [],
-  setCardsProps: () => undefined,
   shuffle: () => undefined,
-  dataCallback: () => undefined,
   cards: [],
   setIsSelected: () => undefined,
-  setIsMatched: () => undefined,
-  isSelected: () => false,
   refresh: () => undefined,
 });
 
@@ -66,42 +46,28 @@ const cardsPropsList = () =>
 
 const GameContextComponent: React.FC = ({ children }) => {
   const [refresh, setRefresh] = useState<number>();
-  const [dataCallback, setDataCallback] = useState<
-    React.Dispatch<React.SetStateAction<JSX.Element[]>>
-  >();
-
   const [cardsProps, setCardsProps] = useState<CardProps[]>();
+  const [selectedCards, setSelectedCards] = useState<CardProps[]>([]);
 
   const handleRefresh = () => {
     setRefresh(1);
-    // setCardsProps([]);
-    // setCards([]);
   };
-
-  // useEffect(() => card, []);
-
-  // useEffect(() => {
-  //   if (!cardsProps.length && !cards?.length) {
-  //     const props = cardsPropsList();
-
-  //     setCardsProps(props);
-  //     setCards(getCardComponentList(props));
-  //   }
-  // }, [cardsProps]);
 
   const [cards, setCards] = useState<JSX.Element[]>();
 
+  const getCardComponent = (cardProps: CardProps) => (
+    <View key={cardProps.id.toString()} style={{ padding: 1 }}>
+      <Card
+        id={cardProps.id}
+        text={cardProps.text}
+        isSelected={cardProps.isSelected}
+        isMatched={cardProps.isMatched}
+      />
+    </View>
+  );
+
   const getCardComponentList = (cardsProps: CardProps[]) =>
-    cardsProps.map((cardProps) => (
-      <View key={cardProps.id.toString()} style={{ padding: 1 }}>
-        <Card
-          id={cardProps.id}
-          text={cardProps.text}
-          isSelected={cardProps.isSelected}
-          isMatched={cardProps.isMatched}
-        />
-      </View>
-    ));
+    cardsProps.map((cardProps) => getCardComponent(cardProps));
 
   useEffect(() => {
     const props = cardsPropsList();
@@ -126,9 +92,6 @@ const GameContextComponent: React.FC = ({ children }) => {
     }
   }, [cardsProps]);
 
-  const isSelected = (id: number) =>
-    selectedCards.find((card) => card.id === id)?.isSelected;
-
   const updateCardsView = (
     cardsPropsSliced: CardProps[],
     cardPropsIndex: number[],
@@ -143,16 +106,7 @@ const GameContextComponent: React.FC = ({ children }) => {
       const cardProps = cardsPropsSliced[cardIndex];
 
       if (shuffledCards) {
-        shuffledCards[cardIndex] = (
-          <View key={cardProps.id.toString()} style={{ padding: 1 }}>
-            <Card
-              id={cardProps.id}
-              text={cardProps.text}
-              isSelected={cardProps.isSelected}
-              isMatched={cardProps.isMatched}
-            />
-          </View>
-        );
+        shuffledCards[cardIndex] = getCardComponent(cardProps);
       }
     }
 
@@ -211,12 +165,6 @@ const GameContextComponent: React.FC = ({ children }) => {
     }
   };
 
-  const _shuffle = (
-    callback: React.Dispatch<React.SetStateAction<JSX.Element[]>>
-  ) => {
-    shuffle(callback);
-  };
-
   const shuffle = (
     callback: React.Dispatch<React.SetStateAction<JSX.Element[]>>
   ) => {
@@ -233,8 +181,6 @@ const GameContextComponent: React.FC = ({ children }) => {
     callback(shuffledCards);
   };
 
-  const [selectedCards, setSelectedCards] = useState<CardProps[]>([]);
-
   const handleSelectCard = (card: CardProps) => {
     setSelectedCards((v) => [...v, card]);
   };
@@ -244,23 +190,16 @@ const GameContextComponent: React.FC = ({ children }) => {
   };
 
   const removeFromList = (text: string) =>
-    setSelectedCards(selectedCards.filter((t) => t !== text));
+    setSelectedCards(selectedCards.filter((t) => t.text !== text));
 
   return (
     <GameContext.Provider
       value={{
-        hasPair,
-        handleSelectCard,
         selectedCards,
         removeFromList,
-        cardsProps,
-        setCardsProps,
-        shuffle: _shuffle,
-        cards,
+        shuffle,
+        cards: cards || [],
         setIsSelected,
-        setIsMatched,
-        dataCallback: setDataCallback,
-        isSelected,
         refresh: handleRefresh,
       }}
     >

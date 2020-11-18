@@ -15,14 +15,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { ContextType, GameContext } from '../../GameContext';
 import TableContexProvider from '../../TableContext';
-import Card, { CARD_HEIGHT } from '../Card';
+import { CARD_HEIGHT } from '../Card';
 
 const { width } = Dimensions.get('window');
 
 export default function Table() {
-  const { cardsProps, setCardsProps, cards, shuffle, refresh } = useContext<
-    ContextType
-  >(GameContext);
+  const { cards, shuffle, refresh } = useContext<ContextType>(GameContext);
 
   const [data, setData] = useState<JSX.Element[]>([]);
 
