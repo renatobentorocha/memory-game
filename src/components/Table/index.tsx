@@ -45,6 +45,7 @@ export default function Table() {
 
         <View style={{ position: 'absolute', bottom: 0, flexDirection: 'row' }}>
           <TouchableOpacity
+            activeOpacity={0.95}
             style={{
               backgroundColor: '#d1d1d1',
               width: width / 2,
@@ -62,6 +63,7 @@ export default function Table() {
             <MaterialIcons name="update" size={24} color="#171717" />
           </TouchableOpacity>
           <TouchableOpacity
+            activeOpacity={0.95}
             style={{
               backgroundColor: '#d1d1d1',
               width: width / 2,
